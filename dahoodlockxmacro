@@ -1,0 +1,377 @@
+-- LocalScript - Lock-On Aimbot Script
+-- Place in executor
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Variables
+local lockedCharacter = nil
+local lockedPlayer = nil
+local isLocked = false
+local showDisplayName = false  -- false = username, true = display name
+local espNameLabel = nil       -- live reference to the ESP label
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "LockOnGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+-- Create Lock Button
+local lockButton = Instance.new("TextButton")
+lockButton.Name = "LockButton"
+lockButton.Size = UDim2.new(0, 100, 0, 50)
+lockButton.Position = UDim2.new(1, -120, 0, 20)
+lockButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+lockButton.Text = "LOCK"
+lockButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+lockButton.TextSize = 18
+lockButton.Font = Enum.Font.GothamBold
+lockButton.Active = true
+lockButton.Draggable = false
+lockButton.Parent = screenGui
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = lockButton
+
+local buttonStroke = Instance.new("UIStroke")
+buttonStroke.Color = Color3.fromRGB(255, 255, 255)
+buttonStroke.Thickness = 2
+buttonStroke.Parent = lockButton
+
+-- Create Macro Button
+local macroButton = Instance.new("TextButton")
+macroButton.Name = "MacroButton"
+macroButton.Size = UDim2.new(0, 100, 0, 35)
+macroButton.Position = UDim2.new(1, -120, 0, 78)
+macroButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+macroButton.Text = "⚡ MACRO"
+macroButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+macroButton.TextSize = 13
+macroButton.Font = Enum.Font.Gotham
+macroButton.Active = true
+macroButton.Parent = screenGui
+
+local macroCorner = Instance.new("UICorner")
+macroCorner.CornerRadius = UDim.new(0, 6)
+macroCorner.Parent = macroButton
+
+local macroStroke = Instance.new("UIStroke")
+macroStroke.Color = Color3.fromRGB(100, 100, 110)
+macroStroke.Thickness = 1
+macroStroke.Parent = macroButton
+
+-- Macro Variables
+local macroEnabled = false
+local macroConnection = nil
+local speedBoost = 150
+local da_hood_rblxm_REAL = getrawmetatable(game)
+local CP = da_hood_rblxm_REAL.__newindex
+local CP_DE_DRIZZY = da_hood_rblxm_REAL.__index
+local lista_de_victimas_de_drizzy = getrenv()._G
+
+setreadonly(da_hood_rblxm_REAL, false)
+da_hood_rblxm_REAL.__index = newcclosure(function(BEST_ON_TOP, IS_GARBAGE)
+    local esPedofilo = checkcaller()
+    if IS_GARBAGE == "WalkSpeed" and not esPedofilo then
+        return lista_de_victimas_de_drizzy.CurrentWS
+    end
+    return CP_DE_DRIZZY(BEST_ON_TOP, IS_GARBAGE)
+end)
+da_hood_rblxm_REAL.__newindex = newcclosure(function(kaias, ip, logger)
+    local unNeonazi = checkcaller()
+    if macroEnabled then
+        if ip == "WalkSpeed" and logger ~= 0 and not unNeonazi then
+            return CP(kaias, ip, speedBoost)
+        end
+    end
+    return CP(kaias, ip, logger)
+end)
+setreadonly(da_hood_rblxm_REAL, true)
+
+local cframeMultiplier = -0.22
+local cframeEnabled = false
+
+macroButton.MouseButton1Click:Connect(function()
+    macroEnabled = not macroEnabled
+    cframeEnabled = not cframeEnabled
+    
+    if macroEnabled then
+        macroButton.Text = "⚡ ON"
+        macroButton.BackgroundColor3 = Color3.fromRGB(60, 180, 80)
+        macroButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        macroStroke.Color = Color3.fromRGB(80, 220, 100)
+        
+        macroConnection = RunService.Heartbeat:Connect(function()
+            local character = player.Character
+            if not character then return end
+            local humanoid = character:FindFirstChild("Humanoid")
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoid and rootPart then
+                humanoid.WalkSpeed = speedBoost
+                if cframeEnabled then
+                    rootPart.CFrame = rootPart.CFrame + humanoid.MoveDirection * cframeMultiplier
+                end
+            end
+        end)
+        print("Macro enabled - Speed boosted to " .. speedBoost .. "!")
+    else
+        macroButton.Text = "⚡ MACRO"
+        macroButton.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        macroButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+        macroStroke.Color = Color3.fromRGB(100, 100, 110)
+        if macroConnection then
+            macroConnection:Disconnect()
+            macroConnection = nil
+        end
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then humanoid.WalkSpeed = 16 end
+        end
+        print("Macro disabled - Speed reset!")
+    end
+end)
+
+-- Dragging
+local dragEnabled = false
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+lockButton.InputBegan:Connect(function(input)
+    if not dragEnabled then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = lockButton.Position
+    end
+end)
+
+lockButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and dragEnabled and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        local newPos = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+        lockButton.Position = newPos
+    end
+end)
+
+-- Chat commands
+player.Chatted:Connect(function(message)
+    local msg = message:lower()
+    
+    if msg == "undrag" then
+        dragEnabled = false
+        lockButton.Draggable = false
+        local originalColor = lockButton.BackgroundColor3
+        lockButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        task.wait(0.3)
+        lockButton.BackgroundColor3 = originalColor
+        print("GUI dragging disabled!")
+
+    elseif msg == "drag" then
+        dragEnabled = true
+        lockButton.Draggable = false
+        local originalColor = lockButton.BackgroundColor3
+        lockButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        task.wait(0.3)
+        lockButton.BackgroundColor3 = originalColor
+        print("GUI dragging enabled!")
+
+    -- NEW: switch ESP label to display name
+    elseif msg == "display" then
+        showDisplayName = true
+        if espNameLabel and lockedPlayer then
+            espNameLabel.Text = lockedPlayer.DisplayName
+        end
+        print("ESP name: Display Name")
+
+    -- NEW: switch ESP label to username
+    elseif msg == "user" then
+        showDisplayName = false
+        if espNameLabel and lockedPlayer then
+            espNameLabel.Text = lockedPlayer.Name
+        end
+        print("ESP name: Username")
+    end
+end)
+
+-- Closest character to screen center
+local function getClosestCharacterToCenter()
+    local centerX = camera.ViewportSize.X / 2
+    local centerY = camera.ViewportSize.Y / 2
+    local closestDistance = math.huge
+    local closestCharacter = nil
+    local closestPlayer = nil
+    
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
+        if targetPlayer ~= player and targetPlayer.Character then
+            local character = targetPlayer.Character
+            local humanoid = character:FindFirstChild("Humanoid")
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if humanoid and humanoid.Health > 0 and rootPart then
+                local screenPos, onScreen = camera:WorldToScreenPoint(rootPart.Position)
+                if onScreen and screenPos.Z > 0 then
+                    local distance = math.sqrt((screenPos.X - centerX)^2 + (screenPos.Y - centerY)^2)
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestCharacter = character
+                        closestPlayer = targetPlayer
+                    end
+                end
+            end
+        end
+    end
+    return closestCharacter, closestPlayer
+end
+
+local function isCharacterDead(character)
+    if not character or not character.Parent then return true end
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then return true end
+    return false
+end
+
+-- ESP
+local espHighlight = nil
+local espGui = nil
+
+local function removeESP()
+    espNameLabel = nil  -- clear reference first
+    if espHighlight then
+        espHighlight:Destroy()
+        espHighlight = nil
+    end
+    if espGui then
+        espGui:Destroy()
+        espGui = nil
+    end
+end
+
+local function createESP(character, targetPlayer)
+    removeESP()
+    
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    espHighlight = Instance.new("Highlight")
+    espHighlight.Name = "LockESP"
+    espHighlight.Adornee = character
+    espHighlight.FillColor = Color3.fromRGB(0, 255, 0)
+    espHighlight.FillTransparency = 0.8
+    espHighlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+    espHighlight.OutlineTransparency = 0.3
+    espHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    espHighlight.Parent = screenGui
+    
+    espGui = Instance.new("BillboardGui")
+    espGui.Name = "LockESPGui"
+    espGui.Adornee = rootPart
+    espGui.Size = UDim2.new(0, 200, 0, 50)
+    espGui.StudsOffset = Vector3.new(0, 3, 0)
+    espGui.AlwaysOnTop = true
+    espGui.Parent = screenGui
+    
+    local espLabel = Instance.new("TextLabel")
+    espLabel.Size = UDim2.new(1, 0, 1, 0)
+    espLabel.BackgroundTransparency = 1
+    -- Use display name or username based on current toggle
+    espLabel.Text = showDisplayName and targetPlayer.DisplayName or targetPlayer.Name
+    espLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    espLabel.TextSize = 20
+    espLabel.Font = Enum.Font.GothamBold
+    espLabel.TextStrokeTransparency = 0
+    espLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    espLabel.Parent = espGui
+    
+    espNameLabel = espLabel  -- save reference for live switching
+end
+
+local function unlock()
+    isLocked = false
+    lockedCharacter = nil
+    lockedPlayer = nil
+    lockButton.Text = "LOCK"
+    lockButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    buttonStroke.Color = Color3.fromRGB(255, 255, 255)
+    removeESP()
+end
+
+lockButton.MouseButton1Click:Connect(function()
+    if not isLocked then
+        local targetChar, targetPlayer = getClosestCharacterToCenter()
+        if targetChar and targetPlayer then
+            isLocked = true
+            lockedCharacter = targetChar
+            lockedPlayer = targetPlayer
+            lockButton.Text = "UNLOCK"
+            lockButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+            buttonStroke.Color = Color3.fromRGB(0, 255, 0)
+            createESP(targetChar, targetPlayer)
+            print("Locked onto: " .. targetPlayer.Name)
+        else
+            print("No valid target found")
+        end
+    else
+        print("Unlocked")
+        unlock()
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if isLocked and lockedCharacter and lockedPlayer then
+        if isCharacterDead(lockedCharacter) then
+            print("Target died, unlocking")
+            unlock()
+            return
+        end
+        
+        local rootPart = lockedCharacter:FindFirstChild("HumanoidRootPart")
+        local head = lockedCharacter:FindFirstChild("Head")
+        local myCharacter = player.Character
+        local myRootPart = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+        local myHumanoid = myCharacter and myCharacter:FindFirstChild("Humanoid")
+        
+        if rootPart and head and myRootPart and myHumanoid then
+            local targetPos = rootPart.Position
+            local myPos = myRootPart.Position
+            local lookAtPos = Vector3.new(targetPos.X, myPos.Y, targetPos.Z)
+            local newCFrame = CFrame.new(myPos, lookAtPos)
+            myRootPart.CFrame = CFrame.new(myPos) * (newCFrame - newCFrame.Position)
+            myHumanoid.AutoRotate = false
+            local offset = Vector3.new(0, 2, 6)
+            local cameraCFrame = CFrame.new(myPos + offset)
+            camera.CFrame = CFrame.new(cameraCFrame.Position, head.Position)
+        else
+            unlock()
+        end
+    else
+        local myCharacter = player.Character
+        if myCharacter then
+            local myHumanoid = myCharacter:FindFirstChild("Humanoid")
+            if myHumanoid then myHumanoid.AutoRotate = true end
+        end
+    end
+end)
+
+print("Lock-On Aimbot loaded!")
+print("Type 'drag'    in chat to enable GUI dragging")
+print("Type 'undrag'  in chat to disable GUI dragging")
+print("Type 'display' in chat to show Display Name on ESP")
+print("Type 'user'    in chat to show Username on ESP")
