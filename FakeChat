@@ -1,0 +1,94 @@
+-- Fake Chat - Looks More Like Real Chat (Rayfield)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Fake Chat",
+    LoadingTitle = "Fake Chats By z6mmy",
+    LoadingSubtitle = "Follow z6mmy on tiktok niggas",
+    ConfigurationSaving = { Enabled = false },
+})
+
+local Tab = Window:CreateTab("Fake Chat", 4483362458)
+
+local selectedPlayer = nil
+local currentMessage = ""
+
+-- Player Dropdown
+local playerDropdown = Tab:CreateDropdown({
+    Name = "Select Player",
+    Options = {},
+    CurrentOption = {},
+    MultiSelection = false,
+    Callback = function(Option)
+        if Option and Option[1] then
+            selectedPlayer = game.Players:FindFirstChild(Option[1])
+        end
+    end,
+})
+
+local function updatePlayerList()
+    local names = {}
+    for _, plr in pairs(game.Players:GetPlayers()) do
+        table.insert(names, plr.Name)
+    end
+    table.sort(names)
+    playerDropdown:Refresh(names)
+end
+
+updatePlayerList()
+game.Players.PlayerAdded:Connect(updatePlayerList)
+game.Players.PlayerRemoving:Connect(updatePlayerList)
+
+-- Message Input
+Tab:CreateInput({
+    Name = "Message",
+    PlaceholderText = "Type message here...",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        currentMessage = Text
+    end,
+})
+
+-- Send Button
+Tab:CreateButton({
+    Name = “Send Message",
+    Callback = function()
+        if not selectedPlayer then
+            Rayfield:Notify({Title = "Error", Content = "Select a player!", Duration = 3})
+            return
+        end
+
+        if currentMessage == "" then
+            Rayfield:Notify({Title = "Error", Content = "Type a message!", Duration = 3})
+            return
+        end
+
+        local StarterGui = game:GetService("StarterGui")
+        local TextChatService = game:GetService("TextChatService")
+
+        -- Bubble above head
+        if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
+            TextChatService:DisplayBubble(selectedPlayer.Character.Head, currentMessage)
+        end
+
+        -- Realistic Chat Log Appearance
+        StarterGui:SetCore("ChatMakeSystemMessage", {
+            Text = selectedPlayer.Name .. ": " .. currentMessage,
+            Color = Color3.fromRGB(255, 255, 255),   -- White like normal chat
+            Font = Enum.Font.SourceSansBold,
+            TextSize = 18,
+        })
+
+        Rayfield:Notify({
+            Title = "Sent!",
+            Content = "Appears as real chat from " .. selectedPlayer.Name,
+            Duration = 4,
+        })
+    end,
+})
+
+Rayfield:Notify({
+    Title = "Ready",
+    Content = "z6mmy on tiktok!",
+    Duration = 5,
+})
