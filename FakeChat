@@ -3,8 +3,8 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
     Name = "Fake Chat",
-    LoadingTitle = "Fake Chats By z6mmy",
-    LoadingSubtitle = "Follow z6mmy on tiktok niggas",
+    LoadingTitle = "Fake Chat Impersonator",
+    LoadingSubtitle = "Realistic Chat Logs",
     ConfigurationSaving = { Enabled = false },
 })
 
@@ -51,7 +51,7 @@ Tab:CreateInput({
 
 -- Send Button
 Tab:CreateButton({
-    Name = “Send Message",
+    Name = "🚀 Send Realistic Fake Message",
     Callback = function()
         if not selectedPlayer then
             Rayfield:Notify({Title = "Error", Content = "Select a player!", Duration = 3})
@@ -89,6 +89,6 @@ Tab:CreateButton({
 
 Rayfield:Notify({
     Title = "Ready",
-    Content = "z6mmy on tiktok!",
+    Content = "Now looks closer to real chat messages",
     Duration = 5,
 })
